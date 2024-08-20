@@ -1,5 +1,5 @@
-const CustomError = require("../utils/CustomErrors");
-const User = require("../models/User");
+const CustomError = require("../utils/customErrors");
+const User = require("../models/user");
 const jwt = require("jsonwebtoken");
 
 exports.isLoggedIn = async (req, res, next) => {
