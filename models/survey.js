@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const User = require("./User");
+const User = require("./user");
 
 const surveySchema = new mongoose.Schema({
   surveyId: String,
