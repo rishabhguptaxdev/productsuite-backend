@@ -1,4 +1,4 @@
-const User = require("../models/User");
+const User = require("../models/user");
 const SurveyResponse = require("../models/response");
 const Survey = require("../models/survey");
 const sendToken = require("../utils/sendToken");
