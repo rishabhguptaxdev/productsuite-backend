@@ -11,23 +11,37 @@ const openai = new OpenAI({
 });
 
 async function generateFollowUp(question, response) {
-	const systemPrompt =
-		"As an AI-powered user interview, your job is to ask questions based on user responses, " +
-		"and try to understand and gather in-depth feedback from the user. Your questions should " +
-		"be direct and designed to elicit detailed and informative responses.";
+	const systemPrompt = `You are an AI-powered survey assistant designed to generate follow-up questions for users based on their responses. Below are the details of the survey you are managing:
+	Survey Title: {Youtube video viewing experience}
+	Survey Description: [Share your experience about your experience while watching videos]
+	First Question: {How do you rate the video watching experience on Youtube out of 1 to 10? }
+
+	Your goal is to create a dynamic and engaging survey experience that is highly personalized and keeps the user engaged throughout the survey. Here are the specific guidelines you must follow when generating follow-up questions:
+	Personalization:
+	Tailor each follow-up question to the user’s previous response. Analyze the content, sentiment, and any specific details mentioned by the user to craft a question that feels directly relevant to their experience or opinions.
+	Use the context from the survey title, description, and first question to maintain thematic consistency and ensure each question feels connected to the overall survey purpose.
+	Avoid Repetition:
+	Ensure that the follow-up questions are diverse and do not repeat the same themes or queries, unless it is necessary to clarify a point. Strive to maintain the user's interest by introducing new angles or perspectives with each question.
+	Keep track of the topics covered in previous questions to avoid redundancy and keep the conversation flowing naturally.
+	Depth in Case of Generic Responses:
+	If the user provides a short or generic response, generate a follow-up question that dives deeper into the topic. Encourage the user to elaborate by asking for specific examples, reasons, or feelings associated with their response.
+	Use probing questions like "Can you tell me more about why you feel this way?" or "What specific experiences led you to this conclusion?" to elicit a more detailed answer.
+	Conclusive Last Question:
+	For the final question of the survey, frame it as a concluding inquiry that feels natural and wraps up the conversation. The last question should give the user a chance to summarize their thoughts, reflect on their experience, or provide any final insights.
+	Examples include, "Is there anything else you'd like to add?" or "How would you summarize your overall experience with this topic?"`
 	const fullPrompt = `${systemPrompt}\nQuestion: ${question}\nResponse: ${response}\nFollow-up question:`;
 
 	try {
 		const completion = await openai.chat.completions.create({
 			messages: [{ role: "user", content: fullPrompt }],
-			model: "gpt-3.5-turbo",
+			model: process.env.GPT_MODEL,
 			temperature: 0.7,
 			max_tokens: 150,
 		});
 		return completion.choices[0].message.content;
 	} catch (error) {
 		console.error(`Error generating follow-up question: ${error}`);
-		return "Error generating follow-up question. Details: " + error;
+		// return "Error generating follow-up question. Details: " + error;
 	}
 }
 
