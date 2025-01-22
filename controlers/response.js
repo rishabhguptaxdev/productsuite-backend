@@ -10,30 +10,40 @@ const openai = new OpenAI({
 	apiKey: process.env.OPENAI_API_KEY,
 });
 
-async function generateFollowUp(question, response) {
-	const systemPrompt = `You are an AI-powered survey assistant designed to generate follow-up questions for users based on their responses. Below are the details of the survey you are managing:
-	Survey Title: {Youtube video viewing experience}
-	Survey Description: [Share your experience about your experience while watching videos]
-	First Question: {How do you rate the video watching experience on Youtube out of 1 to 10? }
+async function generateFollowUp(questionHistory) {
+	const systemPrompt = `You are an empathetic and intelligent survey assistant designed to generate concise, relevant, and emotionally insightful follow-up questions based on user responses. Below are the details of the survey you are managing:
+Survey Title: {Youtube video viewing experience}
+Survey Description: [Share your experience about your time watching videos on YouTube]
+First Question: {How do you rate the video-watching experience on YouTube out of 1 to 10?}
 
-	Your goal is to create a dynamic and engaging survey experience that is highly personalized and keeps the user engaged throughout the survey. Here are the specific guidelines you must follow when generating follow-up questions:
-	Personalization:
-	Tailor each follow-up question to the user’s previous response. Analyze the content, sentiment, and any specific details mentioned by the user to craft a question that feels directly relevant to their experience or opinions.
-	Use the context from the survey title, description, and first question to maintain thematic consistency and ensure each question feels connected to the overall survey purpose.
-	Avoid Repetition:
-	Ensure that the follow-up questions are diverse and do not repeat the same themes or queries, unless it is necessary to clarify a point. Strive to maintain the user's interest by introducing new angles or perspectives with each question.
-	Keep track of the topics covered in previous questions to avoid redundancy and keep the conversation flowing naturally.
-	Depth in Case of Generic Responses:
-	If the user provides a short or generic response, generate a follow-up question that dives deeper into the topic. Encourage the user to elaborate by asking for specific examples, reasons, or feelings associated with their response.
-	Use probing questions like "Can you tell me more about why you feel this way?" or "What specific experiences led you to this conclusion?" to elicit a more detailed answer.
-	Conclusive Last Question:
-	For the final question of the survey, frame it as a concluding inquiry that feels natural and wraps up the conversation. The last question should give the user a chance to summarize their thoughts, reflect on their experience, or provide any final insights.
-	Examples include, "Is there anything else you'd like to add?" or "How would you summarize your overall experience with this topic?"`;
-	const fullPrompt = `${systemPrompt}\nQuestion: ${question}\nResponse: ${response}\nFollow-up question:`;
+Your goal is to create a personalized and engaging survey experience that:
+- Generates short, precise follow-up questions.
+- Responds empathetically to the user's feelings or tone in their answers.
+- Avoids robotic or overly formal language, keeping the tone conversational and relatable.
+- Explores different angles based on the user's response while staying focused on the survey topic.
+- Progressively dives deeper into the user’s experience.
+- Wraps up naturally with a meaningful summarizing question.
+
+Guidelines:
+1. Do not include labels like "Q2," "Q3," etc. Just provide the next question.
+2. Personalize each question based on the user's specific responses, especially their tone or emotional indicators.
+3. Avoid repetition of the same themes and ensure each follow-up question adds a new perspective or probes further into their experience.
+4. Ensure the questions are concise and not overly complex, making them easy for users to respond to.
+5. Conclude the survey by asking for a general reflection or improvement suggestions.
+
+Here is the conversation history so far:
+${questionHistory
+	.map(
+		(qa, index) =>
+			`Q${index + 1}: ${qa.question}\nA${index + 1}: ${qa.response}`
+	)
+	.join("\n")}
+
+What is the next best question to ask based on the above?`;
 
 	try {
 		const completion = await openai.chat.completions.create({
-			messages: [{ role: "user", content: fullPrompt }],
+			messages: [{ role: "user", content: systemPrompt }],
 			model: process.env.GPT_MODEL,
 			temperature: 0.7,
 			max_tokens: 150,
@@ -41,7 +51,7 @@ async function generateFollowUp(question, response) {
 		return completion.choices[0].message.content;
 	} catch (error) {
 		console.error(`Error generating follow-up question: ${error}`);
-		// return "Error generating follow-up question. Details: " + error;
+		return "Error generating follow-up question. Please try again.";
 	}
 }
 
@@ -77,7 +87,7 @@ exports.updateSurveyResponse = async (req, res) => {
 	try {
 		const surveyResponse = await SurveyResponse.findOne({
 			_id: req.params.id,
-		});
+		}).populate({ path: "surveyId", select: "max_questions" });
 		if (surveyResponse == null) {
 			return res.status(404).json({ message: "Survey not found" });
 		}
@@ -98,12 +108,12 @@ exports.updateSurveyResponse = async (req, res) => {
 		});
 
 		if (surveyResponse.questions.length < surveyResponse.max_questions) {
-			const lastQuestion =
-				surveyResponse.questions[surveyResponse.questions.length - 1].question;
-			const followUpQuestion = await generateFollowUp(
-				lastQuestion,
-				responses[responses.length - 1]
-			);
+			const questionHistory = surveyResponse.questions.map((q) => ({
+				question: q.question,
+				response: q.response,
+			}));
+
+			const followUpQuestion = await generateFollowUp(questionHistory);
 			surveyResponse.questions.push({
 				question: followUpQuestion,
 				response: "",
@@ -139,7 +149,7 @@ exports.getLoggerId = async (req, res) => {
 		const newResponse = new SurveyResponse({
 			surveyId: survey._id,
 			questions: survey.questions,
-			// max_questions: survey.max_questions,
+			max_questions: survey.max_questions,
 		});
 
 		await newResponse.save();
