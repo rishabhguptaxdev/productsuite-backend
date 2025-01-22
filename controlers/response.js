@@ -28,7 +28,7 @@ async function generateFollowUp(question, response) {
 	Use probing questions like "Can you tell me more about why you feel this way?" or "What specific experiences led you to this conclusion?" to elicit a more detailed answer.
 	Conclusive Last Question:
 	For the final question of the survey, frame it as a concluding inquiry that feels natural and wraps up the conversation. The last question should give the user a chance to summarize their thoughts, reflect on their experience, or provide any final insights.
-	Examples include, "Is there anything else you'd like to add?" or "How would you summarize your overall experience with this topic?"`
+	Examples include, "Is there anything else you'd like to add?" or "How would you summarize your overall experience with this topic?"`;
 	const fullPrompt = `${systemPrompt}\nQuestion: ${question}\nResponse: ${response}\nFollow-up question:`;
 
 	try {
@@ -47,7 +47,12 @@ async function generateFollowUp(question, response) {
 
 exports.getSurveyResponseById = async (req, res) => {
 	try {
-		const survey = await SurveyResponse.findOne({ _id: req.params.id });
+		const survey = await SurveyResponse.findOne({
+			_id: req.params.id,
+		}).populate({
+			path: "surveyId",
+			select: "max_questions title description",
+		});
 		if (survey == null) {
 			return res.status(404).json({ message: "Survey not found" });
 		}
@@ -108,6 +113,10 @@ exports.updateSurveyResponse = async (req, res) => {
 		}
 
 		const updatedSurvey = await surveyResponse.save();
+		await updatedSurvey.populate({
+			path: "surveyId",
+			select: "max_questions title description", // Fields to populate
+		});
 		return res.json({
 			updatedSurvey,
 			isSurveyCompleted: surveyResponse.isCompleted,
@@ -130,7 +139,7 @@ exports.getLoggerId = async (req, res) => {
 		const newResponse = new SurveyResponse({
 			surveyId: survey._id,
 			questions: survey.questions,
-			max_questions: survey.max_questions,
+			// max_questions: survey.max_questions,
 		});
 
 		await newResponse.save();
