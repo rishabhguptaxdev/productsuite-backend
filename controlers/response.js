@@ -159,3 +159,34 @@ exports.getLoggerId = async (req, res) => {
 		return res.status(500).json({ message: err.message });
 	}
 };
+
+exports.surveyExperience = async (req, res) => {
+	const { surveyResponseId, rating, comments } = req.body;
+
+	const surveyResponse = await SurveyResponse.findOne({
+		_id: surveyResponseId,
+	});
+	if (surveyResponse == null) {
+		return res.status(404).json({ message: "Survey not found" });
+	}
+	try {
+		const { surveyExperience } = req.body;
+		surveyResponse.surveyExperience = {
+			rating,
+			comments,
+		};
+		const savedSurveyResponse = await surveyResponse.save();
+
+		res.status(200).json({
+			savedSurveyResponse,
+		});
+	} catch (err) {
+		console.log(
+			"Somethig went wrong while saving survey experience",
+			err.message
+		);
+		res.status(500).json({
+			message: err.message,
+		});
+	}
+};

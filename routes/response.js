@@ -6,10 +6,12 @@ const {
 	getAllSurveyResponses,
 	updateSurveyResponse,
 	getLoggerId,
+	surveyExperience,
 } = require("../controlers/response");
 const { isLoggedIn } = require("../middleware/user.middleware");
 const { isClosed } = require("../middleware/response.middleware");
 
+router.route("/surveyExperience").patch(surveyExperience);
 router
 	.route("/:id")
 	.get(isClosed, getSurveyResponseById)
