@@ -25,33 +25,51 @@ exports.createSurvey = async (req, res) => {
 // Get all Surveys
 exports.getAllSurveys = async (req, res) => {
 	try {
-		const surveys = await Survey.aggregate([
-			{
-				$match: { user: req.user._id },
-			},
+		const page = parseInt(req.query.page) || 1;
+		const limit = parseInt(req.query.limit) || 5;
+		const skip = (page - 1) * limit;
+		const sortField = req.query.sort || "_id";
+
+		// Define sort order based on field
+		const sortOrder = sortField === "title" ? 1 : -1;
+
+		const aggregation = [
+			{ $match: { user: req.user._id } },
 			{
 				$lookup: {
-					from: "responses", // The name of the responses collection
+					from: "responses",
 					localField: "_id",
 					foreignField: "surveyId",
 					as: "responses",
 				},
 			},
+			{ $addFields: { responseCount: { $size: "$responses" } } },
+			{ $project: { responses: 0 } },
+			{ $sort: { [sortField]: sortOrder } }, // Dynamic sorting
 			{
-				$addFields: {
-					responseCount: { $size: "$responses" },
+				$facet: {
+					metadata: [
+						{ $count: "total" },
+						{ $addFields: { page: page, limit: limit } },
+					],
+					data: [{ $skip: skip }, { $limit: limit }],
 				},
 			},
-			{
-				$project: {
-					responses: 0, // Exclude the responses array if you don't need it
-				},
-			},
-		]);
+		];
 
-		return res.json({ surveys });
+		const result = await Survey.aggregate(aggregation);
+		const surveys = result[0].data;
+		const total = result[0].metadata[0]?.total || 0;
+
+		res.json({
+			surveys,
+			total,
+			page,
+			totalPages: Math.ceil(total / limit),
+			limit,
+		});
 	} catch (err) {
-		return res.status(400).json({ message: err.message });
+		res.status(400).json({ message: err.message });
 	}
 };
 
