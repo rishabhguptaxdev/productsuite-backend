@@ -82,35 +82,28 @@
 
 // module.exports = mongoose.model("User", userSchema);
 
-
-
 const mongoose = require("mongoose");
 const validator = require("validator");
 
-const userSchema = new mongoose.Schema({
-  email: {
-    type: String,
-    required: [true, "Please provide email"],
-    validate: [validator.isEmail, "Please provide valid email"],
-    unique: true,
-  },
-  auth0Id: {
-    type: String,
-    unique: true,
-    required: true,
-  },
-  role: {
-    type: String,
-    default: "user",
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now(),
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now(),
-  },
-});
+const userSchema = new mongoose.Schema(
+	{
+		email: {
+			type: String,
+			required: [true, "Please provide email"],
+			validate: [validator.isEmail, "Please provide valid email"],
+			unique: true,
+		},
+		auth0Id: {
+			type: String,
+			unique: true,
+			required: true,
+		},
+		role: {
+			type: String,
+			default: "user",
+		},
+	},
+	{ timestamps: true }
+);
 
 module.exports = mongoose.model("User", userSchema);

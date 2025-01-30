@@ -31,7 +31,7 @@ exports.getAllSurveys = async (req, res) => {
 		const sortField = req.query.sort || "_id";
 
 		// Define sort order based on field
-		const sortOrder = sortField === "title" ? 1 : -1;
+		const sortOrder = sortField === "oldest" ? 1 : -1;
 
 		const aggregation = [
 			{ $match: { user: req.user._id } },

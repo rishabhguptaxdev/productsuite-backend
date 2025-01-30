@@ -74,12 +74,45 @@ exports.getSurveyResponseById = async (req, res) => {
 
 exports.getAllSurveyResponses = async (req, res) => {
 	try {
-		const responses = await SurveyResponse.find({
-			surveyId: new mongoose.Types.ObjectId(req.params.id),
+		const page = parseInt(req.query.page) || 1;
+		const limit = parseInt(req.query.limit) || 5;
+		const skip = (page - 1) * limit;
+		const sortField = req.query.sort || "updatedAt";
+
+		let sortOrder = sortField === "oldest" ? 1 : -1;
+
+		const aggregation = [
+			{
+				$match: { surveyId: new mongoose.Types.ObjectId(req.params.id) },
+			},
+			{
+				$facet: {
+					metadata: [
+						{ $count: "total" },
+						{ $addFields: { page: page, limit: limit } },
+					],
+					data: [
+						{ $sort: { [sortField]: sortOrder } },
+						{ $skip: skip },
+						{ $limit: limit },
+					],
+				},
+			},
+		];
+
+		const result = await SurveyResponse.aggregate(aggregation);
+		const responses = result[0].data;
+		const total = result[0].metadata[0]?.total || 0;
+
+		res.json({
+			responses,
+			total,
+			page,
+			totalPages: Math.ceil(total / limit),
+			limit,
 		});
-		return res.json(responses);
 	} catch (err) {
-		return res.status(500).json({ message: err.message });
+		res.status(500).json({ message: err.message });
 	}
 };
 
