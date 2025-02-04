@@ -1,27 +1,28 @@
 {
-  "name": "backend",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "bcryptjs": "^2.4.3",
-    "cookie-parser": "^1.4.6",
-    "cors": "^2.8.5",
-    "crypto": "^1.0.1",
-    "dotenv": "^16.4.5",
-    "express": "^5.0.0-beta.2",
-    "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.4.3",
-    "morgan": "^1.10.0",
-    "nodemon": "^3.1.4",
-    "openai": "^4.52.2",
-    "uuid": "^10.0.0",
-    "validator": "^13.12.0"
-  }
+	"name": "backend",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"start": "node index.js",
+		"dev": "nodemon index.js"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"bcryptjs": "^2.4.3",
+		"cookie-parser": "^1.4.6",
+		"cors": "^2.8.5",
+		"crypto": "^1.0.1",
+		"dotenv": "^16.4.5",
+		"express": "^5.0.0-beta.2",
+		"jsonwebtoken": "^9.0.2",
+		"mongoose": "^8.4.3",
+		"morgan": "^1.10.0",
+		"nodemon": "^3.1.4",
+		"openai": "^4.52.2",
+		"uuid": "^10.0.0",
+		"validator": "^13.12.0"
+	}
 }

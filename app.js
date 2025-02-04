@@ -22,6 +22,13 @@ app.use(cookieParser());
 // Enable CORS for all routes
 app.use(cors());
 
+app.get("/health", (req, res) => {
+	res.json({
+		status: true,
+		message: "Everything is up and running 🎉",
+	});
+});
+
 app.use(morgan("tiny"));
 app.use("/api/v1/response", response);
 app.use("/api/v1/auth", user);
