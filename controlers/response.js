@@ -10,37 +10,12 @@ const openai = new OpenAI({
 	apiKey: process.env.OPENAI_API_KEY,
 });
 
-async function generateFollowUp(questionHistory) {
-	const systemPrompt = `You are an empathetic and intelligent survey assistant designed to generate concise, relevant, and emotionally insightful follow-up questions based on user responses. Below are the details of the survey you are managing:
-Survey Title: {Youtube video viewing experience}
-Survey Description: [Share your experience about your time watching videos on YouTube]
-First Question: {How do you rate the video-watching experience on YouTube out of 1 to 10?}
+async function generateFollowUp(questionHistory, description) {
+	const formattedQuestionHistory = questionHistory
+		.map((qa, index) => `System - ${qa.question}\nUser - ${qa.response}`)
+		.join("\n");
 
-Your goal is to create a personalized and engaging survey experience that:
-- Generates short, precise follow-up questions.
-- Responds empathetically to the user's feelings or tone in their answers.
-- Avoids robotic or overly formal language, keeping the tone conversational and relatable.
-- Explores different angles based on the user's response while staying focused on the survey topic.
-- Progressively dives deeper into the user’s experience.
-- Wraps up naturally with a meaningful summarizing question.
-
-Guidelines:
-1. Do not include labels like "Q2," "Q3," etc. Just provide the next question.
-2. Personalize each question based on the user's specific responses, especially their tone or emotional indicators.
-3. Avoid repetition of the same themes and ensure each follow-up question adds a new perspective or probes further into their experience.
-4. Ensure the questions are concise and not overly complex, making them easy for users to respond to.
-5. Conclude the survey by asking for a general reflection or improvement suggestions.
-
-Here is the conversation history so far:
-${questionHistory
-	.map(
-		(qa, index) =>
-			`Q${index + 1}: ${qa.question}\nA${index + 1}: ${qa.response}`
-	)
-	.join("\n")}
-
-What is the next best question to ask based on the above?`;
-
+	const systemPrompt = `Generate the next follow-up question for the survey which is about ${description} where so far this conversation happens between user and the system is:\n${formattedQuestionHistory}\nThe follow-up questions generate by system should be engaging, non-repetitive, and concise\nIMPORTANT: Provide ONLY the question text. Do NOT include "System -" or any other labels in your response.`;
 	try {
 		const completion = await openai.chat.completions.create({
 			messages: [{ role: "user", content: systemPrompt }],
@@ -51,7 +26,7 @@ What is the next best question to ask based on the above?`;
 		return completion.choices[0].message.content;
 	} catch (error) {
 		console.error(`Error generating follow-up question: ${error}`);
-		return "Error generating follow-up question. Please try again.";
+		throw error;
 	}
 }
 
@@ -120,7 +95,7 @@ exports.updateSurveyResponse = async (req, res) => {
 	try {
 		const surveyResponse = await SurveyResponse.findOne({
 			_id: req.params.id,
-		}).populate({ path: "surveyId", select: "max_questions" });
+		}).populate({ path: "surveyId" });
 		if (surveyResponse == null) {
 			return res.status(404).json({ message: "Survey not found" });
 		}
@@ -146,7 +121,10 @@ exports.updateSurveyResponse = async (req, res) => {
 				response: q.response,
 			}));
 
-			const followUpQuestion = await generateFollowUp(questionHistory);
+			const followUpQuestion = await generateFollowUp(
+				questionHistory,
+				surveyResponse.surveyId?.description
+			);
 			surveyResponse.questions.push({
 				question: followUpQuestion,
 				response: "",
