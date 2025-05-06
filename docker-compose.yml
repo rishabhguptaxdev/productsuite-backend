@@ -1,15 +1,6 @@
 version: "3.9"
 
 services:
-  # chromadb:
-  #   image: chromadb/chroma
-  #   ports:
-  #     - "8000:8000"
-  #   volumes:
-  #     - ./chroma-data:/chroma/chroma
-  #   environment:
-  #     - CHROMA_PERSIST_DIRECTORY=/chroma/chroma
-
   qdrant:
     image: qdrant/qdrant:latest
     container_name: qdrant
@@ -19,5 +10,3 @@ services:
     volumes:
       - ./qdrant_data:/qdrant/storage
     restart: unless-stopped
-volumes:
-  chromadb_data:

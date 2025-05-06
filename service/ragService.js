@@ -14,13 +14,13 @@ exports.getAnswer = async (botId, question) => {
 			throw new Error("Bot is not ready yet");
 		}
 
-		// Initialize LOCAL Hugging Face embeddings
+		// Initialize ollama embeddings
 		const embeddings = new OllamaEmbeddings({
 			model: "nomic-embed-text", // Ensure this model is pulled in Ollama
 			baseUrl: "http://localhost:11434", // Ollama's default base URL
 		});
 
-		// Connect to Chroma
+		// Connect to Qdrant
 		const vectorStore = await QdrantVectorStore.fromExistingCollection(
 			embeddings,
 			{
