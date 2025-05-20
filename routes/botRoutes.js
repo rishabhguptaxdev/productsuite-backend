@@ -1,16 +1,24 @@
-const express = require("express");
+import express from "express";
+import {
+	createBot,
+	getUserBots,
+	getBotById,
+	updateBot,
+	deleteBot,
+	getBotDocuments,
+} from "../controlers/botController.js";
+import { isLoggedIn } from "../middleware/user.middleware.js";
+
 const router = express.Router();
-const botController = require("../controlers/botController");
-const { isLoggedIn } = require("../middleware/user.middleware");
 
 // Bot CRUD operations
-router.post("/", isLoggedIn, botController.createBot);
-router.get("/", isLoggedIn, botController.getUserBots);
-router.get("/:id", isLoggedIn, botController.getBotById);
-router.put("/:id", isLoggedIn, botController.updateBot);
-router.delete("/:id", isLoggedIn, botController.deleteBot);
+router.post("/", isLoggedIn, createBot);
+router.get("/", isLoggedIn, getUserBots);
+router.get("/:id", isLoggedIn, getBotById);
+router.put("/:id", isLoggedIn, updateBot);
+router.delete("/:id", isLoggedIn, deleteBot);
 
 // Bot documents operations
-router.get("/:botId/documents", isLoggedIn, botController.getBotDocuments);
+router.get("/:botId/documents", isLoggedIn, getBotDocuments);
 
-module.exports = router;
+export default router;

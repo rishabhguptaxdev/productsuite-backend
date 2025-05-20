@@ -1,11 +1,9 @@
-const User = require("../models/user");
-const SurveyResponse = require("../models/response");
-const Survey = require("../models/survey");
-const sendToken = require("../utils/sendToken");
+import Survey from "../models/survey.js";
 
 // Create Survey
-exports.createSurvey = async (req, res) => {
+export const createSurvey = async (req, res) => {
 	const { title, description, first_question, max_questions } = req.body;
+
 	const survey = new Survey({
 		title,
 		description,
@@ -23,14 +21,12 @@ exports.createSurvey = async (req, res) => {
 };
 
 // Get all Surveys
-exports.getAllSurveys = async (req, res) => {
+export const getAllSurveys = async (req, res) => {
 	try {
 		const page = parseInt(req.query.page) || 1;
 		const limit = parseInt(req.query.limit) || 5;
 		const skip = (page - 1) * limit;
 		const sortField = req.query.sort || "_id";
-
-		// Define sort order based on field
 		const sortOrder = sortField === "oldest" ? 1 : -1;
 
 		const aggregation = [
@@ -45,7 +41,7 @@ exports.getAllSurveys = async (req, res) => {
 			},
 			{ $addFields: { responseCount: { $size: "$responses" } } },
 			{ $project: { responses: 0 } },
-			{ $sort: { [sortField]: sortOrder } }, // Dynamic sorting
+			{ $sort: { [sortField]: sortOrder } },
 			{
 				$facet: {
 					metadata: [
@@ -74,10 +70,10 @@ exports.getAllSurveys = async (req, res) => {
 };
 
 // Get Survey by ID
-exports.getSurveyById = async (req, res) => {
+export const getSurveyById = async (req, res) => {
 	try {
 		const survey = await Survey.findOne({ _id: req.params.id });
-		if (survey == null) {
+		if (!survey) {
 			return res.status(404).json({ message: "Survey not found" });
 		}
 		return res.json(survey);
@@ -86,16 +82,17 @@ exports.getSurveyById = async (req, res) => {
 	}
 };
 
-exports.changeStatusOfSurvey = async (req, res) => {
+// Change survey open/closed status
+export const changeStatusOfSurvey = async (req, res) => {
 	try {
 		const survey = await Survey.findOneAndUpdate(
 			{ _id: req.params.id },
-			{ isClosed: req.body?.isClosed }
+			{ isClosed: req.body?.isClosed },
+			{ new: true }
 		);
-		if (survey == null) {
+		if (!survey) {
 			return res.status(404).json({ message: "Survey not found" });
 		}
-
 		return res.json(survey);
 	} catch (err) {
 		return res.status(500).json({ message: err.message });

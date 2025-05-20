@@ -1,30 +1,32 @@
-const express = require("express");
-const morgan = require("morgan");
-const cookieParser = require("cookie-parser");
-const cors = require("cors");
+import express from "express";
+import morgan from "morgan";
+import cookieParser from "cookie-parser";
+import cors from "cors";
+import dotenv from "dotenv";
 
-//Import all routes
-const response = require("./routes/response");
-const survey = require("./routes/survey");
-const user = require("./routes/user");
-const botRoutes = require("./routes/botRoutes");
-const chatRoutes = require("./routes/chatRoutes");
+// Import all routes
+import responseRoutes from "./routes/response.js";
+import surveyRoutes from "./routes/survey.js";
+import userRoutes from "./routes/user.js";
+import botRoutes from "./routes/botRoutes.js";
+import chatRoutes from "./routes/chatRoutes.js";
 
-require("dotenv").config();
+dotenv.config();
 
 const app = express();
 
-// regular middleware
+// Regular middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static("uploads"));
 
-// cookies and middlewares
+// Cookies and middleware
 app.use(cookieParser());
 
 // Enable CORS for all routes
 app.use(cors());
 
+// Health check route
 app.get("/health", (req, res) => {
 	res.json({
 		status: true,
@@ -32,11 +34,14 @@ app.get("/health", (req, res) => {
 	});
 });
 
+// Logger
 app.use(morgan("tiny"));
-app.use("/api/v1/response", response);
-app.use("/api/v1/auth", user);
-app.use("/api/v1/survey", survey);
+
+// Routes
+app.use("/api/v1/response", responseRoutes);
+app.use("/api/v1/auth", userRoutes);
+app.use("/api/v1/survey", surveyRoutes);
 app.use("/api/v1/bots", botRoutes);
 app.use("/api/v1/chat", chatRoutes);
 
-module.exports = app;
+export default app;

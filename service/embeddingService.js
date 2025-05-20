@@ -1,19 +1,13 @@
-const Bot = require("../models/bot");
-const DocumentModel = require("../models/document");
-const {
-	QdrantVectorStore,
-} = require("@langchain/community/vectorstores/qdrant");
-const { OllamaEmbeddings } = require("@langchain/ollama");
-const { PDFLoader } = require("@langchain/community/document_loaders/fs/pdf");
-const { RecursiveCharacterTextSplitter } = require("langchain/text_splitter");
+import fs from "fs/promises";
+import DocumentModel from "../models/document.js";
+import Bot from "../models/bot.js";
+import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { QdrantVectorStore } from "@langchain/community/vectorstores/qdrant";
+import embeddings from "../providers/embedding.js";
 
-exports.processDocuments = async (botId, filePaths) => {
+export const processDocuments = async (botId, filePaths) => {
 	try {
-		const embeddings = new OllamaEmbeddings({
-			model: "nomic-embed-text", // Ensure this model is pulled in Ollama
-			baseUrl: "http://localhost:11434", // Ollama's default base URL
-		});
-
 		for (const filePath of filePaths) {
 			const loader = new PDFLoader(filePath);
 			const rawDocs = await loader.load();
@@ -24,6 +18,8 @@ exports.processDocuments = async (botId, filePaths) => {
 			});
 
 			const docs = await textSplitter.splitDocuments(rawDocs);
+			const texts = docs.map((doc) => doc.pageContent);
+			const vectors = await embeddings.embedDocuments(texts);
 
 			const vectorStore = await QdrantVectorStore.fromExistingCollection(
 				embeddings,
@@ -40,6 +36,9 @@ exports.processDocuments = async (botId, filePaths) => {
 				{ status: "processed", processedAt: new Date() },
 				{ upsert: true }
 			);
+
+			await fs.unlink(filePath);
+			console.log(`Deleted processed file: ${filePath}`);
 		}
 
 		await Bot.findByIdAndUpdate(botId, { status: "ready" });

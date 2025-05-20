@@ -1,11 +1,9 @@
-const express = require("express");
+import express from "express";
+import { signupOrLogin } from "../controlers/user.js";
+
 const router = express.Router();
 
-const { login, signup, signupOrLogin } = require("../controlers/user");
-
-// router.route("/login").post(login);
-// router.route("/signup").post(signup);
 // This route is triggered after successful OAuth2 authentication from the provider
 router.route("/signup-login").post(signupOrLogin);
 
-module.exports = router;
+export default router;

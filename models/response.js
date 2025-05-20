@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const surveyResponseSchema = new mongoose.Schema(
 	{
@@ -30,4 +30,5 @@ const surveyResponseSchema = new mongoose.Schema(
 	{ timestamps: true }
 );
 
-module.exports = mongoose.model("Response", surveyResponseSchema);
+const SurveyResponse = mongoose.model("Response", surveyResponseSchema);
+export default SurveyResponse;

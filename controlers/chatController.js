@@ -1,8 +1,8 @@
-const Bot = require("../models/bot");
-const { getAnswer } = require("../service/ragService");
+import Bot from "../models/bot.js";
+import { getAnswer } from "../service/ragService.js";
 
 // Get answer from bot using RAG
-exports.getAnswer = async (req, res) => {
+export const getAnswerFromBot = async (req, res) => {
 	try {
 		const { botId } = req.params;
 		const { question } = req.body;
@@ -50,7 +50,7 @@ exports.getAnswer = async (req, res) => {
 };
 
 // Optional: Get chat history for a bot
-exports.getChatHistory = async (req, res) => {
+export const getChatHistory = async (req, res) => {
 	try {
 		const { botId } = req.params;
 		const userId = req.user.id;
@@ -61,8 +61,7 @@ exports.getChatHistory = async (req, res) => {
 			return res.status(404).json({ message: "Bot not found" });
 		}
 
-		// In a real implementation, you would fetch from a ChatHistory model
-		// This is just a placeholder implementation
+		// Placeholder: static history
 		const history = [
 			{
 				question: "What is this bot about?",

@@ -1,17 +1,17 @@
-const express = require("express");
-const router = express.Router();
+import express from "express";
+import {
+	createSurvey,
+	getAllSurveys,
+	getSurveyById,
+	changeStatusOfSurvey,
+} from "../controlers/survey.js";
+import { isLoggedIn } from "../middleware/user.middleware.js";
+import { isClosed } from "../middleware/response.middleware.js";
 
-const {
-  createSurvey,
-  getAllSurveys,
-  getSurveyById,
-  changeStatusOfSurvey,
-} = require("../controlers/survey");
-const { isLoggedIn } = require("../middleware/user.middleware");
-const { isClosed } = require("../middleware/response.middleware");
+const router = express.Router();
 
 router.route("/").get(isLoggedIn, getAllSurveys).post(isLoggedIn, createSurvey);
 router.route("/:id").get(isClosed, getSurveyById);
 router.route("/:id/status").patch(changeStatusOfSurvey);
 
-module.exports = router;
+export default router;

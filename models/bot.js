@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const botSchema = new mongoose.Schema({
 	name: {
@@ -36,4 +36,5 @@ botSchema.pre("save", function (next) {
 	next();
 });
 
-module.exports = mongoose.model("Bot", botSchema);
+const Bot = mongoose.model("Bot", botSchema);
+export default Bot;

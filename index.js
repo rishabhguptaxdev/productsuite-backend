@@ -1,10 +1,11 @@
-const app = require("./app");
-const connectToDB = require("./config/db");
+import dotenv from "dotenv";
+import connectToDB from "./config/db.js";
+import app from "./app.js";
 
-require("dotenv").config();
+dotenv.config();
 
 connectToDB()
-	.then(async () => {
+	.then(() => {
 		app.listen(process.env.PORT || 5050, () => {
 			console.log("[✓] Server is up and running at PORT", process.env.PORT);
 		});

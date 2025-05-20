@@ -1,36 +1,24 @@
-const User = require("../models/user");
-const SurveyResponse = require("../models/response");
-const Survey = require("../models/survey");
-const sendToken = require("../utils/sendToken");
-const OpenAI = require("openai");
-const mongoose = require("mongoose");
-require("dotenv").config();
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+import SurveyResponse from "../models/response.js";
+import Survey from "../models/survey.js";
+import llm from "../providers/llm.js";
 
-const openai = new OpenAI({
-	apiKey: process.env.OPENAI_API_KEY,
-});
+dotenv.config();
 
+// Helper: Generate follow-up question using LLM
 async function generateFollowUp(questionHistory, description) {
-	const formattedQuestionHistory = questionHistory
-		.map((qa, index) => `System - ${qa.question}\nUser - ${qa.response}`)
+	const formatted = questionHistory
+		.map((qa) => `System - ${qa.question}\nUser - ${qa.response}`)
 		.join("\n");
 
-	const systemPrompt = `Generate the next follow-up question for the survey which is about ${description} where so far this conversation happens between user and the system is:\n${formattedQuestionHistory}\nThe follow-up questions generate by system should be engaging, non-repetitive, and concise\nIMPORTANT: Provide ONLY the question text. Do NOT include "System -" or any other labels in your response.`;
-	try {
-		const completion = await openai.chat.completions.create({
-			messages: [{ role: "user", content: systemPrompt }],
-			model: process.env.GPT_MODEL,
-			temperature: 0.7,
-			max_tokens: 150,
-		});
-		return completion.choices[0].message.content;
-	} catch (error) {
-		console.error(`Error generating follow-up question: ${error}`);
-		throw error;
-	}
+	const prompt = `Generate the next follow-up question for the survey which is about ${description} where so far this conversation happens between user and the system is:\n${formatted}\nThe follow-up questions generate by system should be engaging, non-repetitive, and concise\nIMPORTANT: Provide ONLY the question text. Do NOT include "System -" or any other labels in your response.`;
+
+	const response = await llm.call([{ role: "user", content: prompt }]);
+	return response.content;
 }
 
-exports.getSurveyResponseById = async (req, res) => {
+export const getSurveyResponseById = async (req, res) => {
 	try {
 		const survey = await SurveyResponse.findOne({
 			_id: req.params.id,
@@ -38,7 +26,7 @@ exports.getSurveyResponseById = async (req, res) => {
 			path: "surveyId",
 			select: "max_questions title description",
 		});
-		if (survey == null) {
+		if (!survey) {
 			return res.status(404).json({ message: "Survey not found" });
 		}
 		return res.json(survey);
@@ -47,14 +35,13 @@ exports.getSurveyResponseById = async (req, res) => {
 	}
 };
 
-exports.getAllSurveyResponses = async (req, res) => {
+export const getAllSurveyResponses = async (req, res) => {
 	try {
 		const page = parseInt(req.query.page) || 1;
 		const limit = parseInt(req.query.limit) || 5;
 		const skip = (page - 1) * limit;
 		const sortField = req.query.sort || "updatedAt";
-
-		let sortOrder = sortField === "oldest" ? 1 : -1;
+		const sortOrder = sortField === "oldest" ? 1 : -1;
 
 		const aggregation = [
 			{
@@ -62,10 +49,7 @@ exports.getAllSurveyResponses = async (req, res) => {
 			},
 			{
 				$facet: {
-					metadata: [
-						{ $count: "total" },
-						{ $addFields: { page: page, limit: limit } },
-					],
+					metadata: [{ $count: "total" }, { $addFields: { page, limit } }],
 					data: [
 						{ $sort: { [sortField]: sortOrder } },
 						{ $skip: skip },
@@ -91,19 +75,18 @@ exports.getAllSurveyResponses = async (req, res) => {
 	}
 };
 
-exports.updateSurveyResponse = async (req, res) => {
+export const updateSurveyResponse = async (req, res) => {
 	try {
 		const surveyResponse = await SurveyResponse.findOne({
 			_id: req.params.id,
 		}).populate({ path: "surveyId" });
-		if (surveyResponse == null) {
+
+		if (!surveyResponse) {
 			return res.status(404).json({ message: "Survey not found" });
 		}
 
 		if (surveyResponse.questions.length === 0) {
-			const survey = await Survey.findOne({
-				_id: surveyResponse.surveyId,
-			});
+			const survey = await Survey.findOne({ _id: surveyResponse.surveyId });
 			surveyResponse.questions.push(survey.questions[0]);
 			surveyResponse.max_questions = survey.max_questions;
 		}
@@ -125,6 +108,7 @@ exports.updateSurveyResponse = async (req, res) => {
 				questionHistory,
 				surveyResponse.surveyId?.description
 			);
+
 			surveyResponse.questions.push({
 				question: followUpQuestion,
 				response: "",
@@ -136,8 +120,9 @@ exports.updateSurveyResponse = async (req, res) => {
 		const updatedSurvey = await surveyResponse.save();
 		await updatedSurvey.populate({
 			path: "surveyId",
-			select: "max_questions title description", // Fields to populate
+			select: "max_questions title description",
 		});
+
 		return res.json({
 			updatedSurvey,
 			isSurveyCompleted: surveyResponse.isCompleted,
@@ -149,14 +134,15 @@ exports.updateSurveyResponse = async (req, res) => {
 	}
 };
 
-// Creates a new document in response collection
-exports.getLoggerId = async (req, res) => {
+export const getLoggerId = async (req, res) => {
 	try {
 		const { surveyId } = req.params;
 		const survey = await Survey.findOne({ _id: surveyId });
-		if (survey.length === 0) {
+
+		if (!survey) {
 			return res.status(404).json({ message: "Survey not found" });
 		}
+
 		const newResponse = new SurveyResponse({
 			surveyId: survey._id,
 			questions: survey.questions,
@@ -171,33 +157,25 @@ exports.getLoggerId = async (req, res) => {
 	}
 };
 
-exports.surveyExperience = async (req, res) => {
-	const { surveyResponseId, rating, comments } = req.body;
-
-	const surveyResponse = await SurveyResponse.findOne({
-		_id: surveyResponseId,
-	});
-	if (surveyResponse == null) {
-		return res.status(404).json({ message: "Survey not found" });
-	}
+export const surveyExperience = async (req, res) => {
 	try {
-		const { surveyExperience } = req.body;
-		surveyResponse.surveyExperience = {
-			rating,
-			comments,
-		};
+		const { surveyResponseId, rating, comments } = req.body;
+
+		const surveyResponse = await SurveyResponse.findOne({
+			_id: surveyResponseId,
+		});
+
+		if (!surveyResponse) {
+			return res.status(404).json({ message: "Survey not found" });
+		}
+
+		surveyResponse.surveyExperience = { rating, comments };
+
 		const savedSurveyResponse = await surveyResponse.save();
 
-		res.status(200).json({
-			savedSurveyResponse,
-		});
+		res.status(200).json({ savedSurveyResponse });
 	} catch (err) {
-		console.log(
-			"Somethig went wrong while saving survey experience",
-			err.message
-		);
-		res.status(500).json({
-			message: err.message,
-		});
+		console.error("Something went wrong while saving survey experience", err);
+		res.status(500).json({ message: err.message });
 	}
 };

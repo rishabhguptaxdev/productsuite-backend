@@ -1,9 +1,13 @@
-const express = require("express");
+import express from "express";
+import {
+	getAnswerFromBot,
+	getChatHistory,
+} from "../controlers/chatController.js";
+import { isLoggedIn } from "../middleware/user.middleware.js";
+
 const router = express.Router();
-const chatController = require("../controlers/chatController");
-const { isLoggedIn } = require("../middleware/user.middleware");
 
-router.post("/:botId", isLoggedIn, chatController.getAnswer);
-router.get("/:botId/history", isLoggedIn, chatController.getChatHistory);
+router.post("/:botId", isLoggedIn, getAnswerFromBot);
+router.get("/:botId/history", isLoggedIn, getChatHistory);
 
-module.exports = router;
+export default router;

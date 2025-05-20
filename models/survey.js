@@ -1,5 +1,4 @@
-const mongoose = require("mongoose");
-const User = require("./user");
+import mongoose from "mongoose";
 
 const surveySchema = new mongoose.Schema(
 	{
@@ -16,7 +15,7 @@ const surveySchema = new mongoose.Schema(
 		user: {
 			type: mongoose.Types.ObjectId,
 			ref: "User",
-			required: [true, "User is not loggedin"],
+			required: [true, "User is not logged in"],
 		},
 		isClosed: {
 			type: Boolean,
@@ -26,4 +25,5 @@ const surveySchema = new mongoose.Schema(
 	{ timestamps: true }
 );
 
-module.exports = mongoose.model("Survey", surveySchema);
+const Survey = mongoose.model("Survey", surveySchema);
+export default Survey;
