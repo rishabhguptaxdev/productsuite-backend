@@ -25,7 +25,7 @@ export const processDocuments = async (botId, filePaths) => {
 				embeddings,
 				{
 					collectionName: `bot_${botId}`,
-					url: "http://localhost:6333",
+					url: process.env.QDRANT_DB_URL,
 				}
 			);
 

@@ -11,7 +11,7 @@ export const getAnswer = async (botId, question) => {
 		embeddings,
 		{
 			collectionName: `bot_${botId}`,
-			url: "http://localhost:6333",
+			url: process.env.QDRANT_DB_URL,
 		}
 	);
 
