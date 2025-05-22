@@ -1,23 +1,20 @@
-import dotenv from "dotenv";
-
 import { ChatOpenAI } from "@langchain/openai";
 import { ChatCohere } from "@langchain/cohere";
-
-dotenv.config();
+import config from "../config/app.config.js";
 
 let llm;
 
-if (process.env.LLM_PROVIDER === "cohere") {
+if (config.llmProvider === "cohere") {
 	llm = new ChatCohere({
 		model: "command-r-plus",
 		temperature: 0.7,
-		apiKey: process.env.COHERE_API_KEY,
+		apiKey: config.cohere.apiKey,
 	});
 } else {
 	llm = new ChatOpenAI({
-		modelName: process.env.GPT_MODEL || "gpt-3.5-turbo",
+		modelName: config.openai.model,
 		temperature: 0.7,
-		openAIApiKey: process.env.OPENAI_API_KEY,
+		openAIApiKey: config.openai.apiKey,
 	});
 }
 

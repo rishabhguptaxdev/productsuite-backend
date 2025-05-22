@@ -2,6 +2,7 @@ import Bot from "../models/bot.js";
 import { QdrantVectorStore } from "@langchain/community/vectorstores/qdrant";
 import llm from "../providers/llm.js";
 import embeddings from "../providers/embedding.js";
+import qdrantConnector from "../connectors/qdrantdb.connector.js";
 
 export const getAnswer = async (botId, question) => {
 	const bot = await Bot.findById(botId);
@@ -10,8 +11,8 @@ export const getAnswer = async (botId, question) => {
 	const vectorStore = await QdrantVectorStore.fromExistingCollection(
 		embeddings,
 		{
+			client: qdrantConnector.getClient(),
 			collectionName: `bot_${botId}`,
-			url: process.env.QDRANT_DB_URL,
 		}
 	);
 

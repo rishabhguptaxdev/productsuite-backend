@@ -1,16 +1,22 @@
 import dotenv from "dotenv";
-import connectToDB from "./config/db.js";
 import app from "./app.js";
+import mongoConnector from "./connectors/mongodb.connector.js";
+import qdrantConnector from "./connectors/qdrantdb.connector.js";
+import config from "./config/app.config.js";
 
 dotenv.config();
 
-connectToDB()
-	.then(() => {
-		app.listen(process.env.PORT || 5050, () => {
-			console.log("[✓] Server is up and running at PORT", process.env.PORT);
-		});
-	})
-	.catch((error) => {
-		console.error("[x] Error starting app:", error);
+const start = async () => {
+	try {
+		await Promise.all([mongoConnector.connect(), qdrantConnector.connect()]);
+
+		app.listen(config.port, () =>
+			console.log(`[✓] Server is running on port ${config.port}`)
+		);
+	} catch (err) {
+		console.error("[x] Error during startup:", err.message);
 		process.exit(1);
-	});
+	}
+};
+
+start();

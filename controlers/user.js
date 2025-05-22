@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import User from "../models/user.js";
 import sendToken from "../utils/sendToken.js";
+import config from "../config/app.config.js";
 
 // Signup controller
 export const signup = async (req, res) => {
@@ -83,8 +84,8 @@ export const signupOrLogin = async (req, res) => {
 			});
 		}
 
-		const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-			expiresIn: process.env.JWT_EXPIRY,
+		const token = jwt.sign({ id: user._id }, config.jwt.secret, {
+			expiresIn: config.jwt.expiry,
 		});
 
 		res.status(200).json({

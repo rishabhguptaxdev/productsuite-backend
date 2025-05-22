@@ -5,6 +5,7 @@ import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { QdrantVectorStore } from "@langchain/community/vectorstores/qdrant";
 import embeddings from "../providers/embedding.js";
+import qdrantConnector from "../connectors/qdrantdb.connector.js";
 
 export const processDocuments = async (botId, filePaths) => {
 	try {
@@ -24,8 +25,8 @@ export const processDocuments = async (botId, filePaths) => {
 			const vectorStore = await QdrantVectorStore.fromExistingCollection(
 				embeddings,
 				{
+					client: qdrantConnector.getClient(),
 					collectionName: `bot_${botId}`,
-					url: process.env.QDRANT_DB_URL,
 				}
 			);
 

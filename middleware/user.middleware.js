@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import User from "../models/user.js";
 import CustomError from "../utils/customErrors.js";
+import config from "../config/app.config.js";
 
 // Middleware: Check if user is logged in
 export const isLoggedIn = async (req, res, next) => {
@@ -12,7 +13,7 @@ export const isLoggedIn = async (req, res, next) => {
 			return next(new CustomError("User is not logged in", 401));
 		}
 
-		const decoded = jwt.verify(token, process.env.JWT_SECRET);
+		const decoded = jwt.verify(token, config.jwt.secret);
 		req.user = await User.findById(decoded.id);
 
 		if (!req.user) {
