@@ -21,6 +21,10 @@ const botSchema = new mongoose.Schema({
 		enum: ["pending", "processing", "ready", "failed"],
 		default: "pending",
 	},
+	isShareable: {
+		type: Boolean,
+		default: false,
+	},
 	createdAt: {
 		type: Date,
 		default: Date.now,

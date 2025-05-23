@@ -6,15 +6,27 @@ export const getAnswerFromBot = async (req, res) => {
 	try {
 		const { botId } = req.params;
 		const { question } = req.body;
-		const userId = req.user.id;
+		const userId = req.user?.id;
 
-		// Verify the user owns the bot
-		const bot = await Bot.findOne({ _id: botId, owner: userId });
+		// Load the bot
+		const bot = await Bot.findById(botId);
 		if (!bot) {
 			return res.status(404).json({ message: "Bot not found" });
 		}
 
-		// Check if bot is ready
+		// If user is not authenticated, ensure the bot is shareable
+		if (!userId && !bot.isShareable) {
+			return res
+				.status(403)
+				.json({ message: "Unauthorized or bot is private" });
+		}
+
+		// If user is authenticated, ensure they own the bot
+		if (userId && bot.owner.toString() !== userId) {
+			return res.status(403).json({ message: "You don't own this bot" });
+		}
+
+		// Ensure the bot is ready
 		if (bot.status !== "ready") {
 			return res.status(400).json({
 				message: "Bot is not ready yet",
@@ -22,7 +34,6 @@ export const getAnswerFromBot = async (req, res) => {
 			});
 		}
 
-		// Get answer using RAG
 		const answer = await getAnswer(botId, question);
 
 		res.status(200).json({
@@ -34,16 +45,8 @@ export const getAnswerFromBot = async (req, res) => {
 	} catch (error) {
 		console.error("Chat error:", error);
 
-		let statusCode = 500;
-		let message = "Failed to get answer from bot";
-
-		if (error.message.includes("Bot is not ready")) {
-			statusCode = 400;
-			message = error.message;
-		}
-
-		res.status(statusCode).json({
-			message,
+		res.status(500).json({
+			message: "Failed to get answer from bot",
 			error: error.message,
 		});
 	}

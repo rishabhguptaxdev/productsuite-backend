@@ -144,12 +144,12 @@ export const getBotById = async (req, res) => {
 export const updateBot = async (req, res) => {
 	try {
 		const { id } = req.params;
-		const { name, description } = req.body;
+		const { name, description, isShareable } = req.body;
 		const userId = req.user.id;
 
 		const bot = await Bot.findOneAndUpdate(
 			{ _id: id, owner: userId },
-			{ name, description, updatedAt: Date.now() },
+			{ name, description, isShareable, updatedAt: Date.now() },
 			{ new: true, runValidators: true }
 		);
 
@@ -206,6 +206,31 @@ export const deleteBot = async (req, res) => {
 			message: "Failed to delete bot",
 			error: error.message,
 		});
+	}
+};
+
+export const getPublicBotById = async (req, res) => {
+	try {
+		const { id } = req.params;
+		const bot = await Bot.findOne({ _id: id });
+
+		if (!bot) {
+			return res.status(404).json({
+				success: false,
+				message: "Bot does not exist",
+			});
+		}
+
+		if (!bot.isShareable) {
+			return res.status(403).json({
+				success: false,
+				message: "Bot is not shareble",
+			});
+		}
+
+		res.json({ success: true, bot });
+	} catch (err) {
+		res.status(500).json({ success: false, message: err.message });
 	}
 };
 

@@ -38,3 +38,20 @@ export const customRole = (...roles) => {
 		next();
 	};
 };
+
+export const optionalAuth = async (req, res, next) => {
+	try {
+		const token =
+			req.header("Authorization")?.replace("Bearer ", "") || req.body?.token;
+
+		if (!token || token == "null") return next(); // continue as anonymous
+
+		const decoded = jwt.verify(token, config.jwt.secret);
+		req.user = await User.findById(decoded.id);
+
+		next();
+	} catch (error) {
+		console.warn("Invalid or missing token. Continuing as guest.");
+		next(); // Don't block unauthenticated users
+	}
+};
