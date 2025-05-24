@@ -1,4 +1,4 @@
-import fs from "fs";
+import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import multer from "multer";
@@ -6,7 +6,7 @@ import multer from "multer";
 import Bot from "../models/bot.js";
 import Document from "../models/document.js";
 import { processDocuments } from "../service/embeddingService.js";
-
+import qdrantConnector from "../connectors/qdrantdb.connector.js";
 // ESM-compatible __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -175,29 +175,66 @@ export const deleteBot = async (req, res) => {
 		const { id } = req.params;
 		const userId = req.user.id;
 
+		// 1. Find and delete the bot
 		const bot = await Bot.findOneAndDelete({ _id: id, owner: userId });
 		if (!bot) {
 			return res.status(404).json({ message: "Bot not found" });
 		}
 
+		// 2. Get all documents associated with the bot
 		const documents = await Document.find({ bot: id });
 
-		documents.forEach((doc) => {
+		// 3. Delete all document files from the filesystem
+		const fileDeletionPromises = documents.map(async (doc) => {
 			try {
-				if (fs.existsSync(doc.path)) {
-					fs.unlinkSync(doc.path);
+				// Use fs.promises.access to check if file exists
+				try {
+					await fs.access(doc.path);
+					// File exists, so delete it
+					await fs.unlink(doc.path);
+				} catch (accessError) {
+					// File doesn't exist, no problem
+					if (accessError.code !== "ENOENT") {
+						throw accessError;
+					}
 				}
 			} catch (fileError) {
 				console.error("Error deleting document file:", fileError);
 			}
 		});
+		await Promise.all(fileDeletionPromises);
 
+		// 4. Delete all documents from MongoDB
 		await Document.deleteMany({ bot: id });
 
-		// TODO: Delete vector embeddings from vector database
+		// 5. Delete vector embeddings from Qdrant
+		try {
+			const collectionName = `bot_${id}`;
+			const client = qdrantConnector.getClient();
+
+			// Check if collection exists
+			try {
+				await client.getCollection(collectionName);
+				// Collection exists, so delete it
+				await client.deleteCollection(collectionName);
+				console.log(`Deleted Qdrant collection: ${collectionName}`);
+			} catch (collectionError) {
+				if (collectionError.status !== 404) {
+					// Only log if it's not a "not found" error
+					console.error(
+						"Error checking/deleting Qdrant collection:",
+						collectionError
+					);
+				}
+				// Collection doesn't exist - that's fine, we can continue
+			}
+		} catch (vectorError) {
+			console.error("Error deleting vector embeddings:", vectorError);
+			// Don't fail the entire operation if vector deletion fails
+		}
 
 		res.status(200).json({
-			message: "Bot and associated documents deleted successfully",
+			message: "Bot and all associated data deleted successfully",
 			deletedBotId: id,
 		});
 	} catch (error) {
